@@ -6,6 +6,11 @@ using UnityEngine.Networking;
 using UnityEngine.Events;
 using Newtonsoft.Json;
 using System.IO;
+using System;
+using System.Text;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 using AsyncIO;
 using NetMQ;
 using NetMQ.Sockets;
@@ -15,6 +20,21 @@ public class IntEvent : UnityEvent<int> { }
 
 public class Telegram : MonoBehaviour
 {
+
+    [HideInInspector] public bool isTxStarted = false;
+    private Telegram telegram;
+
+    [SerializeField] string IP = "127.0.0.1"; // local host
+    [SerializeField] int rxPort = 8000; // port to receive data from Python on
+    [SerializeField] int txPort = 8001; // port to send data to Python on
+
+    int i = 0; // DELETE THIS: Added to show sending data from Unity to Python via UDP
+
+    // Create necessary UdpClient objects
+    UdpClient client;
+    IPEndPoint remoteEndPoint;
+    Thread receiveThread; // Receiving Thread
+
     public string chat_id = "6040682630"; // ID (you can know your id via @userinfobot)
     public string TOKEN = "6040682630:AAF8WI6ry4wa979hdqipOKOIgH4FhGxyVak"; // bot token (@BotFather)
 
@@ -56,8 +76,8 @@ public class Telegram : MonoBehaviour
         {
             Debug.Log("SENDING OVER SERVER");
             string json = JsonUtility.ToJson(messagesqueue.Peek());
-            //udpSocket.SendData(json); //USE UdpSocket.PROCESS TEXT function, merge telegram.cs and UdpSocket, two are not needed.
-            udpSocket.SendData(messagesqueue.Peek().text);
+            udpSocket.SendData(json); //USE UdpSocket.PROCESS TEXT function, merge telegram.cs and UdpSocket, two are not needed.
+            //udpSocket.SendData(messagesqueue.Peek().text);
             modelfree = false;
         } 
         else if(messagesqueue.Count != 0 && (modelresponse != null && modelresponse != "") && conversationactive && !messagesentattempt) 
